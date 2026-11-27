@@ -75,6 +75,27 @@ export class RealEngine implements AnalysisEngine {
           }))
         : [])) as AnalysisResult['accidents'];
       const detections = (raw.detections ?? []) as AnalysisResult['detections'];
+      // 서버 behaviors는 프레임 샘플({t, labelKo, trackId, confidence}) 형태이므로
+      // UI가 기대하는 BehaviorEvent로 정규화한다. (누락 필드로 인한 렌더 오류 방지)
+      const rawBehaviors = (raw.behaviors ?? []) as Array<Record<string, unknown>>;
+      const behaviors: AnalysisResult['behaviors'] = rawBehaviors.map((b, i) => {
+        const sev = String(b.severity ?? 'info');
+        const severity = (['info', 'caution', 'warning', 'critical'].includes(sev)
+          ? sev : 'info') as AnalysisResult['behaviors'][number]['severity'];
+        return {
+          id: String(b.id ?? `behavior-${i}`),
+          timestamp: Number(b.timestamp ?? b.t ?? 0),
+          trackId: Number(String(b.trackId ?? 0).replace(/^\D+/, '')) || 0,
+          label: String(b.label ?? b.labelKo ?? 'behavior'),
+          labelKo: String(b.labelKo ?? b.label ?? '행동'),
+          category: String(b.category ?? '일반'),
+          confidence: Number(b.confidence ?? 0),
+          severity,
+          durationSec: Number(b.durationSec ?? 0),
+        };
+      });
+      const rawSummary = (raw.summary ?? {}) as Partial<AnalysisResult['summary']>;
+      const behaviorEventCount = new Set(behaviors.map((b) => `${b.trackId}:${b.labelKo}`)).size;
       const result: AnalysisResult = {
         engine: (raw.engine as AnalysisResult['engine']) ?? 'real',
         generatedAt: (raw.generatedAt as string) ?? new Date().toISOString(),
@@ -86,7 +107,7 @@ export class RealEngine implements AnalysisEngine {
           || (d as unknown as { pose?: string }).pose === 'person',
         ).length,
         detections,
-        behaviors: (raw.behaviors ?? []) as AnalysisResult['behaviors'],
+        behaviors,
         situations: (raw.situations ?? []) as AnalysisResult['situations'],
         actions: (raw.actions ?? []) as AnalysisResult['actions'],
         accidents,
@@ -101,10 +122,14 @@ export class RealEngine implements AnalysisEngine {
         motionSeries: (raw.motionSeries ?? []) as AnalysisResult['motionSeries'],
         performanceEvaluation: (raw.performanceEvaluation ?? []) as AnalysisResult['performanceEvaluation'],
         engineTimings: raw.engineTimings as AnalysisResult['engineTimings'],
-        summary: (raw.summary ?? {
-          riskScore: 0, complianceScore: 100, avgConfidence: 0,
-          peakCrowd: 0, totalBehaviors: 0, criticalCount: 0,
-        }) as AnalysisResult['summary'],
+        summary: {
+          riskScore: rawSummary.riskScore ?? 0,
+          complianceScore: rawSummary.complianceScore ?? 100,
+          avgConfidence: rawSummary.avgConfidence ?? 0,
+          peakCrowd: rawSummary.peakCrowd ?? 0,
+          totalBehaviors: Math.max(rawSummary.totalBehaviors ?? 0, behaviorEventCount),
+          criticalCount: rawSummary.criticalCount ?? 0,
+        },
       };
       onProgress?.(1, '완료');
       return result;

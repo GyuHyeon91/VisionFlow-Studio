@@ -1,4 +1,4 @@
-# VisionFlow Studio — 단계별 코드 작업 기록 (1~100단계)
+# VisionFlow Studio — 단계별 코드 작업 기록 (1~101단계)
 
 작업 위치: `C:\Users\mbc\Desktop\학생방\박규현\visionflow-studio`
 
@@ -1243,6 +1243,16 @@
 
 **검증**: API 200 (항목 16 · 그룹 5 · 외부 데이터셋 8), UI 렌더 24행·7카드·16경로, 콘솔 오류 0건
 
+## 101단계 — 실제 데이터 화면자료·시연영상 / 행동 데이터 정규화
+
+| 코드 | 작업 | 내용 |
+|---|---|---|
+| `realEngine.ts` | **[수정]** | 서버 behaviors(프레임 샘플 `{t, trackId, labelKo}`)를 UI `BehaviorEvent`로 정규화. `timestamp` 누락으로 인한 `toFixed` 렌더 오류 해결, `summary.totalBehaviors`를 고유 이벤트 수로 보정 |
+| `docs/웹_시연영상.mp4` | **[추가]** | 실제 업로드 영상 분석 결과가 표시된 화면으로 구성한 36초 시연영상 (12장면, 한국어 자막·안내 팝업 포함) |
+| 외부 제출자료 | **[추가]** | `01_결과보고서_발표자료/실제데이터_화면자료/` 8개 화면 이미지 + 설명 문서 |
+
+**검증**: 실제 영상(`upload_1795069361166.mp4`) UI 업로드 → 분석 완료, 위험점수 0·행동 3건·BBox 버스 77%/사람 65%·캡션 3개·평균 지연 42ms 출력. Behaviors 정규화 후 인물 행동 감지 탭 렌더 오류 해소
+
 <!-- CODE_DETAILS_START -->
 
 ## 코드 상세 (파일명 클릭 시 전체 코드 펼침)
@@ -2046,6 +2056,11 @@ console.log(`CODE_DETAILS 갱신 완료: ${files.length}개 파일`);
 
 > ⚠️ **독립 실행 프로젝트**: 다른 프로젝트와 연동하지 않으며, 포트·주소·설정·의존성을 공유하지 않습니다.
 > 자세한 내용은 [`docs/ISOLATION.md`](docs/ISOLATION.md) 참조.
+
+## 링크
+
+- **GitHub**: https://github.com/GyuHyeon91/VisionFlow-Studio.git
+- **작업일지(Notion)**: https://app.notion.com/p/41d10b5d185380a4bf4ec755b8d57ac4?source=copy_link
 
 ## 작업 위치
 
@@ -4158,6 +4173,27 @@ export class RealEngine implements AnalysisEngine {
           }))
         : [])) as AnalysisResult['accidents'];
       const detections = (raw.detections ?? []) as AnalysisResult['detections'];
+      // 서버 behaviors는 프레임 샘플({t, labelKo, trackId, confidence}) 형태이므로
+      // UI가 기대하는 BehaviorEvent로 정규화한다. (누락 필드로 인한 렌더 오류 방지)
+      const rawBehaviors = (raw.behaviors ?? []) as Array<Record<string, unknown>>;
+      const behaviors: AnalysisResult['behaviors'] = rawBehaviors.map((b, i) => {
+        const sev = String(b.severity ?? 'info');
+        const severity = (['info', 'caution', 'warning', 'critical'].includes(sev)
+          ? sev : 'info') as AnalysisResult['behaviors'][number]['severity'];
+        return {
+          id: String(b.id ?? `behavior-${i}`),
+          timestamp: Number(b.timestamp ?? b.t ?? 0),
+          trackId: Number(String(b.trackId ?? 0).replace(/^\D+/, '')) || 0,
+          label: String(b.label ?? b.labelKo ?? 'behavior'),
+          labelKo: String(b.labelKo ?? b.label ?? '행동'),
+          category: String(b.category ?? '일반'),
+          confidence: Number(b.confidence ?? 0),
+          severity,
+          durationSec: Number(b.durationSec ?? 0),
+        };
+      });
+      const rawSummary = (raw.summary ?? {}) as Partial<AnalysisResult['summary']>;
+      const behaviorEventCount = new Set(behaviors.map((b) => `${b.trackId}:${b.labelKo}`)).size;
       const result: AnalysisResult = {
         engine: (raw.engine as AnalysisResult['engine']) ?? 'real',
         generatedAt: (raw.generatedAt as string) ?? new Date().toISOString(),
@@ -4169,7 +4205,7 @@ export class RealEngine implements AnalysisEngine {
           || (d as unknown as { pose?: string }).pose === 'person',
         ).length,
         detections,
-        behaviors: (raw.behaviors ?? []) as AnalysisResult['behaviors'],
+        behaviors,
         situations: (raw.situations ?? []) as AnalysisResult['situations'],
         actions: (raw.actions ?? []) as AnalysisResult['actions'],
         accidents,
@@ -4184,10 +4220,14 @@ export class RealEngine implements AnalysisEngine {
         motionSeries: (raw.motionSeries ?? []) as AnalysisResult['motionSeries'],
         performanceEvaluation: (raw.performanceEvaluation ?? []) as AnalysisResult['performanceEvaluation'],
         engineTimings: raw.engineTimings as AnalysisResult['engineTimings'],
-        summary: (raw.summary ?? {
-          riskScore: 0, complianceScore: 100, avgConfidence: 0,
-          peakCrowd: 0, totalBehaviors: 0, criticalCount: 0,
-        }) as AnalysisResult['summary'],
+        summary: {
+          riskScore: rawSummary.riskScore ?? 0,
+          complianceScore: rawSummary.complianceScore ?? 100,
+          avgConfidence: rawSummary.avgConfidence ?? 0,
+          peakCrowd: rawSummary.peakCrowd ?? 0,
+          totalBehaviors: Math.max(rawSummary.totalBehaviors ?? 0, behaviorEventCount),
+          criticalCount: rawSummary.criticalCount ?? 0,
+        },
       };
       onProgress?.(1, '완료');
       return result;
