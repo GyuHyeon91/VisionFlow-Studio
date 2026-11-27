@@ -1,0 +1,30 @@
+{
+  "name": "visionflow-studio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "영상 분석 파이프라인 스튜디오 - 모듈형 옵션 아키텍처",
+  "workspaces": [
+    "apps/web-react",
+    "apps/web-next",
+    "apps/web-vue",
+    "services/express"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w apps/web-react",
+    "build": "npm run build -w apps/web-react",
+    "preview": "npm run preview -w apps/web-react",
+    "dev:next": "npm run dev -w apps/web-next",
+    "dev:vue": "npm run dev -w apps/web-vue",
+    "ports:check": "node scripts/check-ports.mjs",
+    "docs:code": "node scripts/generate-code-doc.mjs",
+    "backend:setup": "python -m venv .venv",
+    "backend:fastapi": ".\\.venv\\Scripts\\python.exe -m uvicorn services.fastapi.app.main:app --reload --port 53720",
+    "backend:express": "node services/express/src/index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "allowScripts": {
+    "esbuild@0.25.12": true
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "VisionFlow Studio App Config",
+  "type": "object",
+  "properties": {
+    "project": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "slug": { "type": "string" },
+        "version": { "type": "string" },
+        "description": { "type": "string" }
+      },
+      "required": ["name", "slug", "version"]
+    },
+    "options": { "type": "object" },
+    "performance": { "type": "object" },
+    "accuracy": { "type": "object" },
+    "preprocessing": { "type": "object" },
+    "detection": {
+      "type": "object",
+      "properties": {
+        "model": { "type": "object" },
+        "tracker": { "type": "object" },
+        "opticalFlow": { "type": "object" },
+        "classFilter": { "type": "object" },
+        "resolutionMode": { "type": "object" },
+        "scales": { "type": "object" },
+        "runtime": { "type": "object" }
+      }
+    },
+    "broker": { "type": "object" },
+    "prediction": { "type": "object" },
+    "streaming": { "type": "object" },
+    "storage": { "type": "object" },
+    "training": { "type": "object" },
+    "safety": { "type": "object" },
+    "measurement": {
+      "type": "object",
+      "properties": {
+        "relativeSize": { "type": "object" },
+        "referenceObject": { "type": "object" },
+        "knownWidthCm": { "type": "object" },
+        "fieldOfViewDeg": { "type": "object" },
+        "depthEstimation": { "type": "object" }
+      }
+    },
+    "pipeline": {
+      "type": "object",
+      "properties": {
+        "autoUpdate": { "type": "object" },
+        "nodes": { "type": "array" },
+        "edges": { "type": "array" }
+      },
+      "required": ["autoUpdate", "nodes", "edges"]
+    },
+    "ports": {
+      "type": "object",
+      "properties": {
+        "web": { "type": "integer" },
+        "next": { "type": "integer" },
+        "vue": { "type": "integer" },
+        "fastapi": { "type": "integer" },
+        "express": { "type": "integer" }
+      },
+      "required": ["web", "next", "vue", "fastapi", "express"]
+    },
+    "isolation": { "type": "object" },
+    "server": { "type": "object" }
+  },
+  "required": ["project", "options", "performance", "accuracy", "preprocessing", "detection", "broker", "prediction", "training", "safety", "streaming", "storage", "measurement", "pipeline", "ports"]
+}

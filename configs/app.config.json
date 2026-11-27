@@ -1,0 +1,417 @@
+{
+  "$schema": "./app.config.schema.json",
+  "project": {
+    "name": "VisionFlow Studio",
+    "slug": "visionflow-studio",
+    "version": "1.0.0",
+    "description": "영상 기반 데이터 분석 / 인물 행동 감지 / 상황별 조치 권고 파이프라인 스튜디오"
+  },
+  "options": {
+    "frontend": {
+      "value": "react",
+      "choices": ["react", "next", "vue"],
+      "description": "사용할 웹 프론트엔드 스택 (apps/ 하위 폴더와 매핑)"
+    },
+    "analysisEngine": {
+      "value": "hybrid",
+      "choices": ["mock", "real", "hybrid"],
+      "description": "영상 분석 엔진. mock=시뮬레이션, real=백엔드 CV 호출, hybrid=목업+실제 병합"
+    },
+    "backend": {
+      "value": "fastapi",
+      "choices": ["none", "fastapi", "express"],
+      "description": "분석 API 백엔드. none=브라우저 전용, fastapi=Python CV, express=Node API"
+    },
+    "design": {
+      "value": "daylight",
+      "choices": ["aurora", "midnight", "light", "daylight", "cyber"],
+      "description": "프리미엄 시각화 테마. daylight는 밝고 선명한 기본 테마"
+    },
+    "language": {
+      "value": "ko",
+      "choices": ["ko", "en"],
+      "description": "UI 표시 언어"
+    }
+  },
+  "performance": {
+    "resolution": {
+      "value": "720p",
+      "choices": ["360p", "480p", "720p", "1080p"],
+      "description": "분석 입력 프레임 해상도"
+    },
+    "fps": {
+      "value": 15,
+      "min": 1,
+      "max": 60,
+      "description": "초당 분석 프레임 수"
+    },
+    "concurrency": {
+      "value": 4,
+      "min": 1,
+      "max": 16,
+      "description": "동시 파이프라인 노드 실행 수"
+    },
+    "hardwareAcceleration": {
+      "value": true,
+      "description": "GPU 가속 사용 여부 (WebGL / OpenCV DNN)"
+    },
+    "adaptiveQuality": {
+      "value": true,
+      "description": "성능에 따라 품질을 자동 조절"
+    },
+    "batchSize": {
+      "value": 8,
+      "min": 1,
+      "max": 64,
+      "description": "한 번에 처리하는 프레임 배치 크기"
+    }
+  },
+  "accuracy": {
+    "confidenceThreshold": {
+      "value": 0.32,
+      "min": 0.1,
+      "max": 0.99,
+      "description": "감지 신뢰도 최소 임계값. 0.30~0.35 권장 (누락 감소, 오탐은 후처리로 억제)"
+    },
+    "personDetectionSensitivity": {
+      "value": 0.7,
+      "min": 0.1,
+      "max": 1.0,
+      "description": "인물 감지 민감도"
+    },
+    "behaviorModel": {
+      "value": "balanced",
+      "choices": ["fast", "balanced", "accurate", "ensemble"],
+      "description": "행동 인식 모델 프로파일"
+    },
+    "temporalSmoothing": {
+      "value": true,
+      "description": "시계열 평활화로 프레임 간 떨림 제거"
+    },
+    "nmsThreshold": {
+      "value": 0.45,
+      "min": 0.1,
+      "max": 0.9,
+      "description": "Non-Maximum Suppression 임계값"
+    },
+    "enableReIdentification": {
+      "value": true,
+      "description": "인물 재식별(Re-ID)로 동일 인물 추적 정확도 향상"
+    }
+  },
+  "preprocessing": {
+    "nmsIoU": {
+      "value": 0.55,
+      "min": 0.1,
+      "max": 0.9,
+      "description": "중복 Box 제거용 NMS IoU 임계값. 0.5~0.6 권장"
+    },
+    "gamma": {
+      "value": 1.0,
+      "min": 0.4,
+      "max": 2.0,
+      "description": "감마 보정. 유리 반사·역광 노이즈 완화"
+    },
+    "excludeZones": {
+      "value": [
+        [[0, 0], [100, 0], [100, 8], [0, 8]],
+        [[0, 92], [100, 92], [100, 100], [0, 100]]
+      ],
+      "description": "분석 제외 영역(화면 비율 % 폴리곤). 상단 하늘·하단 대시보드 반사"
+    }
+  },
+  "detection": {
+    "model": {
+      "value": "yolov8s.pt",
+      "choices": ["yolov8n.pt", "yolov8s.pt", "yolov11n.pt", "rtdetr-l.pt"],
+      "description": "사전학습 객체 탐지 모델. 별도 학습 데이터 없이 사용 가능"
+    },
+    "tracker": {
+      "value": "bytetrack",
+      "choices": ["nearest", "bytetrack", "botsort"],
+      "description": "탐지 결과에 트랙 ID를 부여하는 알고리즘. ByteTrack/BoT-SORT 권장"
+    },
+    "trackBuffer": {
+      "value": 30,
+      "min": 5,
+      "max": 90,
+      "description": "객체가 잠시 가려져도 ID를 유지하는 프레임 수"
+    },
+    "realtimeImgsz": {
+      "value": 640,
+      "min": 320,
+      "max": 1280,
+      "step": 160,
+      "description": "실시간 프레임 추론 입력 크기. 640 권장 (960은 정확도는 높지만 detect 600ms+로 추적 지연)"
+    },
+    "opticalFlow": {
+      "value": false,
+      "description": "모델 없이 프레임 간 광학 흐름으로 움직임만 추출 (저사양용)"
+    },
+    "resolutionMode": {
+      "value": "multiscale",
+      "choices": ["single", "multiscale", "tiled"],
+      "description": "해상도 대응 방식. single=단일, multiscale=320/640 앙상블, tiled=4분할 타일 추론"
+    },
+    "scales": {
+      "value": [320, 640],
+      "description": "다중 스케일 추론에 사용할 입력 크기(px)"
+    },
+    "runtime": {
+      "value": "openvino",
+      "choices": ["onnx", "openvino", "pytorch"],
+      "description": "추론 엔진. ONNX Runtime은 CPU/GPU에서 빠르고, PyTorch는 호환성이 높음"
+    },
+    "classFilter": {
+      "value": "all",
+      "choices": ["all", "person_vehicle", "person_only"],
+      "description": "추적 표시 클래스. all=전체, person_vehicle=사람/차량, person_only=사람만 (지게차 오탐 완전 차단)"
+    },
+    "personBoost": {
+      "value": true,
+      "description": "COCO 사전학습 모델로 사람을 추가 감지. 커스텀 모델의 사람 감지 퇴화를 보완 (신뢰도 0.3 이상만 병합)"
+    },
+    "personBoostMinConf": {
+      "value": 0.3,
+      "min": 0.2,
+      "max": 0.7,
+      "description": "COCO 사람 보강 시 최소 신뢰도. 낮추면 누락 감소, 높이면 오탐 감소"
+    },
+    "analysisImgsz": {
+      "value": 640,
+      "min": 320,
+      "max": 1280,
+      "step": 160,
+      "description": "영상 분석용 입력 크기. 1080p 원본도 이 크기로 축소해 추론 (CPU 속도 우선 640, 정확도 960)"
+    },
+    "analysisFps": {
+      "value": 6,
+      "min": 1,
+      "max": 30,
+      "description": "영상 분석 초당 프레임 수. 30fps 영상도 5~10fps로 샘플링해 처리 속도 개선"
+    }
+  },
+  "broker": {
+    "type": {
+      "value": "local",
+      "choices": ["local", "redis"],
+      "description": "이벤트 브로커. local=파일, redis=Redis Streams"
+    },
+    "url": {
+      "value": "redis://127.0.0.1:6379/0",
+      "description": "Redis 접속 URL"
+    },
+    "stream": {
+      "value": "visionflow:events",
+      "description": "Redis Streams 키"
+    }
+  },
+  "prediction": {
+    "enabled": {
+      "value": true,
+      "description": "칼만 필터 기반 이동 예측 및 ROI 위험구역 교차 판단"
+    },
+    "horizonSec": {
+      "value": 2,
+      "min": 1,
+      "max": 5,
+      "description": "예측 시간(초)"
+    },
+    "roiPolygons": {
+      "value": [[[10, 20], [40, 20], [40, 60], [10, 60]]],
+      "description": "화면 비율(0~100) 기반 위험 구역 폴리곤 목록"
+    }
+  },
+  "accidentAnalysis": {
+    "enabled": { "value": true, "description": "프레임 히스토리 기반 시간적 사고 판단 (충돌·급정지·넘어짐)" },
+    "collisionDistDrop": { "value": 0.65, "min": 0.2, "max": 0.95, "description": "충돌 판정 거리 급감 비율" },
+    "collisionWindowSec": { "value": 2.0, "min": 0.5, "max": 5, "description": "사고 판단 시간 창(초)" },
+    "stopSpeedThreshold": { "value": 2.0, "min": 0.5, "max": 10, "description": "정지 판정 속도(%/초)" },
+    "fallDropPct": { "value": 8.0, "min": 2, "max": 30, "description": "넘어짐 수직 하강 기준(%)" },
+    "minFrames": { "value": 3, "min": 2, "max": 10, "description": "사고 판정 최소 지속 프레임" }
+  },
+  "streaming": {
+    "rtspUrl": {
+      "value": "",
+      "description": "RTSP 카메라 주소. 비어 있으면 파일 업로드 모드"
+    },
+    "webrtcUrl": {
+      "value": "",
+      "description": "MediaMTX WebRTC 주소(예: http://host:8889/camera/whep). RTSP를 브라우저로 중계"
+    },
+    "enabled": {
+      "value": false,
+      "description": "RTSP 스트림 수신 및 서버 측 분석 활성화"
+    }
+  },
+  "storage": {
+    "eventLog": {
+      "value": true,
+      "description": "분석 이벤트를 로컬 JSONL에 저장"
+    },
+    "clipBeforeSec": {
+      "value": 5,
+      "min": 1,
+      "max": 30,
+      "description": "사고 전 저장 영상 길이"
+    },
+    "clipAfterSec": {
+      "value": 5,
+      "min": 1,
+      "max": 30,
+      "description": "사고 후 저장 영상 길이"
+    }
+  },
+  "training": {
+    "activeLearning": {
+      "value": true,
+      "description": "애매한 신뢰도 구간/오탐 프레임을 하드 네거티브로 자동 수집"
+    },
+    "ambiguousMin": {
+      "value": 0.35,
+      "min": 0.1,
+      "max": 0.9,
+      "description": "액티브 러닝 수집 하한 신뢰도"
+    },
+    "ambiguousMax": {
+      "value": 0.7,
+      "min": 0.1,
+      "max": 0.95,
+      "description": "액티브 러닝 수집 상한 신뢰도"
+    },
+    "clipWindowSec": {
+      "value": 5,
+      "min": 1,
+      "max": 15,
+      "description": "사고 전후 연속 프레임 클립 길이(초)"
+    },
+    "syntheticCopies": {
+      "value": 3,
+      "min": 0,
+      "max": 20,
+      "description": "이미지 증강 기반 합성 데이터 생성 배수"
+    }
+  },
+  "safety": {
+    "fallRiskZones": {
+      "value": [[[25, 45], [55, 45], [55, 80], [25, 80]]],
+      "description": "개구부·비계·단부 등 추락 위험 구역(화면 비율 % 폴리곤)"
+    },
+    "disappearanceSec": {
+      "value": 1.2,
+      "min": 0.3,
+      "max": 5,
+      "description": "위험 구역 내 객체 소실로 추락 판단할 지속 시간"
+    },
+    "stillSec": {
+      "value": 3,
+      "min": 1,
+      "max": 10,
+      "description": "쓰러짐 후 정지 상태 유지 시간"
+    },
+    "gatherCount": {
+      "value": 3,
+      "min": 2,
+      "max": 10,
+      "description": "주변 작업자 접근 수 (추락 corroboration)"
+    }
+  },
+  "measurement": {
+    "relativeSize": {
+      "value": true,
+      "description": "BBox 기준 상대 크기(폭/높이 %, 면적 %, 종횡비)를 출력"
+    },
+    "referenceObject": {
+      "value": "car",
+      "choices": ["car", "person", "none"],
+      "description": "실측 보정 기준이 되는 객체"
+    },
+    "knownWidthCm": {
+      "value": 180,
+      "min": 30,
+      "max": 400,
+      "description": "기준 객체의 실제 폭(cm)"
+    },
+    "fieldOfViewDeg": {
+      "value": 60,
+      "min": 30,
+      "max": 120,
+      "description": "카메라 수평 화각(도). 거리 추정에 사용"
+    },
+    "depthEstimation": {
+      "value": true,
+      "description": "MiDaS 깊이 모델로 객체별 거리·실측 크기를 추정 (최초 모델 다운로드 필요)"
+    }
+  },
+  "pipeline": {
+    "autoUpdate": {
+      "value": true,
+      "description": "노드 생성/수정/삭제 시 파이프라인을 자동으로 재구성하고 재실행"
+    },
+    "autoUpdateDebounceMs": {
+      "value": 350,
+      "description": "자동 업데이트 디바운스 시간(ms)"
+    },
+    "nodes": [
+      { "id": "ingest", "type": "source", "label": "영상 입력", "enabled": true },
+      { "id": "decode", "type": "transform", "label": "프레임 디코딩", "enabled": true },
+      { "id": "preprocess", "type": "transform", "label": "AI 전처리 (640 · 6fps)", "enabled": true },
+      { "id": "signals", "type": "analysis", "label": "실제 영상 신호 추출", "enabled": true },
+      { "id": "detect", "type": "analysis", "label": "YOLO 객체 탐지", "enabled": true },
+      { "id": "track", "type": "analysis", "label": "ByteTrack 추적", "enabled": true },
+      { "id": "pose", "type": "analysis", "label": "사람 자세 분석", "enabled": true },
+      { "id": "behavior", "type": "analysis", "label": "행동 인식", "enabled": true },
+      { "id": "accidents", "type": "analysis", "label": "시간 기반 사고 판단", "enabled": true },
+      { "id": "industrial", "type": "analysis", "label": "산업현장 위험 분석", "enabled": true },
+      { "id": "situation", "type": "analysis", "label": "상황 판단", "enabled": true },
+      { "id": "action", "type": "output", "label": "조치 권고", "enabled": true },
+      { "id": "description", "type": "output", "label": "영상 텍스트 설명", "enabled": true },
+      { "id": "performance", "type": "output", "label": "성능 평가", "enabled": true },
+      { "id": "review", "type": "output", "label": "사고 검토", "enabled": true },
+      { "id": "report", "type": "output", "label": "분석 리포트", "enabled": true }
+    ],
+    "edges": [
+      { "from": "ingest", "to": "decode" },
+      { "from": "decode", "to": "preprocess" },
+      { "from": "preprocess", "to": "signals" },
+      { "from": "preprocess", "to": "detect" },
+      { "from": "signals", "to": "track" },
+      { "from": "detect", "to": "track" },
+      { "from": "track", "to": "pose" },
+      { "from": "pose", "to": "behavior" },
+      { "from": "track", "to": "accidents" },
+      { "from": "behavior", "to": "accidents" },
+      { "from": "accidents", "to": "industrial" },
+      { "from": "industrial", "to": "situation" },
+      { "from": "situation", "to": "action" },
+      { "from": "situation", "to": "description" },
+      { "from": "situation", "to": "performance" },
+      { "from": "accidents", "to": "review" },
+      { "from": "review", "to": "report" },
+      { "from": "action", "to": "report" },
+      { "from": "description", "to": "report" },
+      { "from": "performance", "to": "report" }
+    ]
+  },
+  "isolation": {
+    "standalone": true,
+    "description": "다른 프로젝트와 포트/주소/설정을 공유하지 않는 독립 실행 모드",
+    "reservedPortOwner": "visionflow-studio"
+  },
+  "ports": {
+    "web": 53710,
+    "next": 53711,
+    "vue": 53712,
+    "fastapi": 53720,
+    "express": 53721
+  },
+  "server": {
+    "port": 53720,
+    "host": "0.0.0.0",
+    "corsOrigins": [
+      "http://localhost:53710",
+      "http://localhost:53711",
+      "http://localhost:53712"
+    ]
+  }
+}

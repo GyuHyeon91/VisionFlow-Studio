@@ -1,0 +1,14 @@
+# MediaMTX (구 rtsp-simple-server) 설정 - 무료 오픈소스 스트림 서버
+# 실행: mediamtx services/mediamtx/mediamtx.yml
+# RTSP 카메라를 WebRTC / LL-HLS 로 브라우저에 전달할 때 사용합니다.
+
+rtspAddress: :8554
+webrtcAddress: :8889
+hlsAddress: :8888
+hlsVariant: lowLatency
+hlsSegmentDuration: 1s
+
+paths:
+  camera:
+    # source: rtsp://user:pass@camera-ip/stream
+    source: publisher
